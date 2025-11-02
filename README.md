@@ -85,6 +85,18 @@ The built files will be in the `dist` directory.
 npm run preview
 ```
 
+### Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/RodneyCumming/Read)
+
+The easiest way to deploy:
+
+1. Go to [vercel.com](https://vercel.com)
+2. Import your GitHub repository
+3. Click Deploy
+
+See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for detailed instructions.
+
 ## Usage
 
 ### Adding Books
