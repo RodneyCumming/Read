@@ -11,3 +11,16 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* Ensure epub.js iframes render at full size */
+.epub-container,
+.epub-view {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.epub-container iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none;
+}

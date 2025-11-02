@@ -43,15 +43,22 @@ export const Reader = ({ book, onClose }: ReaderProps) => {
 
         console.log('EPUB initialized');
 
-      // Create rendition with consistent sizing
-      const rendition = epubBook.renderTo(viewerRef.current!, {
-        width: '100%',
-        height: '100%',
-        spread: 'none',
-        flow: 'paginated'
-      });
+        // Get actual dimensions of the container
+        const container = viewerRef.current!;
+        const width = container.offsetWidth || window.innerWidth;
+        const height = container.offsetHeight || window.innerHeight - 150; // Account for header/footer
 
-      renditionRef.current = rendition;
+        console.log('Container dimensions:', { width, height });
+
+        // Create rendition with explicit sizing
+        const rendition = epubBook.renderTo(container, {
+          width: width,
+          height: height,
+          spread: 'none',
+          flow: 'paginated'
+        });
+
+        renditionRef.current = rendition;
 
       // Set font size for consistency
       rendition.themes.fontSize('18px');
@@ -110,10 +117,24 @@ export const Reader = ({ book, onClose }: ReaderProps) => {
 
       document.addEventListener('keydown', handleKeyPress);
 
+        // Handle window resize
+        const handleResize = () => {
+          if (renditionRef.current && viewerRef.current) {
+            const container = viewerRef.current;
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            renditionRef.current.resize(width, height);
+          }
+        };
+
+        window.addEventListener('resize', handleResize);
+
         setLoading(false);
+        console.log('Book loaded successfully');
 
       return () => {
         document.removeEventListener('keydown', handleKeyPress);
+        window.removeEventListener('resize', handleResize);
       };
       } catch (err) {
         console.error('Error loading book:', err);
@@ -201,9 +222,9 @@ export const Reader = ({ book, onClose }: ReaderProps) => {
       </header>
 
       {/* Reader Content */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="flex-1 relative overflow-hidden bg-gray-50">
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white">
+          <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading book...</p>
@@ -212,7 +233,7 @@ export const Reader = ({ book, onClose }: ReaderProps) => {
         )}
 
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white p-8">
+          <div className="absolute inset-0 flex items-center justify-center bg-white p-8 z-10">
             <div className="text-center max-w-md">
               <svg className="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -229,7 +250,14 @@ export const Reader = ({ book, onClose }: ReaderProps) => {
           </div>
         )}
 
-        <div ref={viewerRef} className="w-full h-full" />
+        <div
+          ref={viewerRef}
+          className="w-full h-full bg-white"
+          style={{
+            minHeight: '100%',
+            position: 'relative'
+          }}
+        />
 
         {/* Navigation Arrows */}
         {!loading && !error && (
