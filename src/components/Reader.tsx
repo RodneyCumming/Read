@@ -16,6 +16,8 @@ export const Reader = ({ book, onClose }: ReaderProps) => {
   const [progress, setProgress] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const sessionStartRef = useRef<number>(Date.now());
   const sessionPagesRef = useRef<number>(0);
 
@@ -23,9 +25,23 @@ export const Reader = ({ book, onClose }: ReaderProps) => {
     if (!viewerRef.current) return;
 
     const initBook = async () => {
-      // Initialize epub book
-      const epubBook = ePub(book.file);
-      epubBookRef.current = epubBook;
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Validate book file
+        if (!book.file) {
+          throw new Error('Book file is missing. Please try uploading the book again.');
+        }
+
+        console.log('Loading book:', book.title);
+        console.log('Book file size:', book.file.byteLength, 'bytes');
+
+        // Initialize epub book
+        const epubBook = ePub(book.file);
+        epubBookRef.current = epubBook;
+
+        console.log('EPUB initialized');
 
       // Create rendition with consistent sizing
       const rendition = epubBook.renderTo(viewerRef.current!, {
@@ -94,9 +110,16 @@ export const Reader = ({ book, onClose }: ReaderProps) => {
 
       document.addEventListener('keydown', handleKeyPress);
 
+        setLoading(false);
+
       return () => {
         document.removeEventListener('keydown', handleKeyPress);
       };
+      } catch (err) {
+        console.error('Error loading book:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load book. Please try again.');
+        setLoading(false);
+      }
     };
 
     initBook();
@@ -179,26 +202,57 @@ export const Reader = ({ book, onClose }: ReaderProps) => {
 
       {/* Reader Content */}
       <div className="flex-1 relative overflow-hidden">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading book...</p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white p-8">
+            <div className="text-center max-w-md">
+              <svg className="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Error Loading Book</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button
+                onClick={handleClose}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Go Back to Library
+              </button>
+            </div>
+          </div>
+        )}
+
         <div ref={viewerRef} className="w-full h-full" />
 
         {/* Navigation Arrows */}
-        <button
-          onClick={goToPrevPage}
-          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all opacity-50 hover:opacity-100"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+        {!loading && !error && (
+          <>
+            <button
+              onClick={goToPrevPage}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all opacity-50 hover:opacity-100"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
 
-        <button
-          onClick={goToNextPage}
-          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all opacity-50 hover:opacity-100"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+            <button
+              onClick={goToNextPage}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all opacity-50 hover:opacity-100"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </>
+        )}
       </div>
 
       {/* Footer */}
